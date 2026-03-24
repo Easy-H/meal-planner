@@ -1,0 +1,63 @@
+/* 전체 달력 표 설정 */
+.grid-calendar {
+    width: 100%;
+    table-layout: fixed; /* [핵심] 모든 열의 너비를 동일하게 고정 */
+    border-collapse: collapse; /* 테두리 겹침 방지 */
+    margin-top: 20px;
+    background-color: #ffffff;
+    border: 2px solid #333; /* 바깥쪽 굵은 테두리 */
+}
+
+/* 헤더(요일) 및 일반 칸 공통 설정 */
+.grid-calendar th, 
+.grid-calendar td {
+    border: 1px solid #dee2e6; /* 칸 구분선 */
+    padding: 12px 8px; /* [핵심] 상하 12px, 좌우 8px의 여백 */
+    text-align: center;
+    vertical-align: middle;
+    word-break: break-all; /* 내용이 길면 칸 안에서 줄바꿈 */
+    overflow: hidden;
+}
+
+/* 왼쪽 라벨 열 (구분, 날짜, 1차 등) */
+.row-label, .label-col {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    width: 80px; /* 라벨 열만 너비를 살짝 조절 (필요시) */
+    color: #495057;
+}
+
+/* 날짜 행 강조 */
+.date-row td {
+    background-color: #f1f3f5;
+    font-weight: 700;
+}
+
+/* 식단 칸 설정 */
+.meal-cell {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* 확정 식단 강조 스타일 */
+.meal-cell.fixed {
+    background-color: #e7f5ff;
+    color: #1971c2;
+    font-weight: 600;
+}
+
+/* 빈 칸 처리 */
+.meal-cell.empty {
+    color: #ced4da;
+}
+
+/* 주말 색상 */
+.sun { color: #e03131; } /* 일요일 빨간색 */
+.sat { color: #1971c2; } /* 토요일 파란색 */
+
+/* 주차 사이 구분선 */
+.week-divider td {
+    height: 8px;
+    background-color: #e9ecef;
+    border: none;
+}
