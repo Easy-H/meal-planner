@@ -3,10 +3,12 @@
  * 예산 상태를 스스로 관리하며, 상한선 초과 시 isValid: false를 반환합니다.
  */
 export class DynamicBudgetConstraint {
+
     constructor(totalBudget) {
         this.totalBudget = totalBudget;
         this.totalSavings = 0;
         this.processedCount = 0;
+
     }
 
     // 플래너가 전략을 추가할 때 호출하여 초기 설정 수행

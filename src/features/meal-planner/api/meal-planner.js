@@ -1,28 +1,22 @@
 export class MealPlanner {
-
     constructor(config) {
-        this.config = config; // config.schedule: { 1: 3, 6: 2 } (월:3끼, 토:2끼) 형태 포함
+        this.config = config;
         this.strategies = [];
         this.history = [];
         this.fixedSchedule = {};
     }
-    
+
     addConstraints(strategy) {
-        if (strategy.init) strategy.init(this); // 전략이 초기화를 필요로 하면 실행
+        if (strategy.init) strategy.init(this);
         this.strategies.push(strategy);
     }
-    
-    addFixedMeal(date, index, name) {
-        if (!this.fixedSchedule[date]) this.fixedSchedule[date] = {};
-        this.fixedSchedule[date][index] = name;
-    }
 
-    // 요일별 식사 횟수 가져오기 (0: 일요일, 6: 토요일)
     getMealsPerDay(date) {
-        const dayOfWeek = date.getDay();
+        const d = new Date(date);
+        const dayOfWeek = d.getDay();
         return this.config.schedule?.[dayOfWeek] ?? this.config.mealsPerDay;
     }
-    
+
     getTotalMealSlots() {
         let count = 0;
         let curr = new Date(this.config.startDate);
@@ -39,49 +33,25 @@ export class MealPlanner {
         const result = {};
         this.history = [];
 
-        // 1. 확정 식단 히스토리 선등록
-        Object.entries(this.fixedSchedule).forEach(([date, meals]) => {
-            Object.entries(meals).forEach(([idx, name]) => {
-                const food = foods.find(f => f.name === name) || { name, ingredients: {} };
-                this.history.push({
-                    date, mealIndex: parseInt(idx),
-                    foodNames: [food.name],
-                    ingredients: new Set(Object.keys(food.ingredients || {})), isFixed: true
-                });
-            });
-        });
-
         let curr = new Date(startDate);
         while (curr <= new Date(endDate)) {
             const dateStr = curr.toISOString().split('T')[0];
             const mealsNeeded = this.getMealsPerDay(curr);
-
-            // [수정] 식사가 0인 경우에도 null이 아닌 빈 배열 []을 할당하여 에러 방지
             result[dateStr] = [];
 
             if (mealsNeeded > 0) {
                 for (let i = 0; i < mealsNeeded; i++) {
-                    let finalMeal;
-                    const fixedName = this.fixedSchedule[dateStr]?.[i];
-
-                    if (fixedName) {
-                        const food = foods.find(f => f.name === fixedName) || { name: fixedName, ingredients: {} };
-                        finalMeal = {
-                            name: fixedName, items: [food], isFixed: true,
-                            totalCost: this.calculateCost(food),
-                            allIngredients: new Set(Object.keys(food.ingredients || {}))
-                        };
-                    } else {
-                        finalMeal = this.findBestMeal(dateStr, i, mealsNeeded);
-                    }
-
+                    const finalMeal = this.findBestMeal(dateStr, i);
+                    
+                    // 상태 업데이트 (예산 이월 등)
                     this.strategies.forEach(s => s.updateState?.(finalMeal.totalCost || 0));
 
                     if (!finalMeal.error) {
                         this.history.push({
-                            date: dateStr, mealIndex: i,
+                            date: dateStr, 
+                            mealIndex: i,
                             foodNames: finalMeal.items.map(it => it.name),
-                            ingredients: finalMeal.allIngredients, isFixed: !!finalMeal.isFixed
+                            ingredients: finalMeal.allIngredients
                         });
                     }
                     result[dateStr].push(finalMeal);
@@ -94,44 +64,50 @@ export class MealPlanner {
 
     findBestMeal(dateStr, mealIndex) {
         const historyNames = this.history.flatMap(h => h.foodNames || []);
-
-        // [필터링 1] 금지 재료 목록 도출 (MealIntervalConstraint 기반)
+        
+        // 1. 금지 재료 계산
         const bannedIngredients = new Set();
-        const intervalConstraints = this.strategies.filter(s => s.ingredientName);
-
-        intervalConstraints.forEach(constraint => {
+        this.strategies.filter(s => s.ingredientName).forEach(constraint => {
             const currentAbsIdx = constraint.getAbsoluteIndex(dateStr, mealIndex, this.config.mealsPerDay);
             for (const record of this.history) {
                 const recordAbsIdx = constraint.getAbsoluteIndex(record.date, record.mealIndex, this.config.mealsPerDay);
-                const diff = Math.abs(currentAbsIdx - recordAbsIdx);
-                if (diff > 0 && diff <= constraint.minMealInterval) {
-                    if (record.ingredients && record.ingredients.has(constraint.ingredientName)) {
+                if (Math.abs(currentAbsIdx - recordAbsIdx) <= constraint.minMealInterval) {
+                    if (record.ingredients?.has(constraint.ingredientName)) {
                         bannedIngredients.add(constraint.ingredientName);
                     }
                 }
             }
         });
 
-        // [필터링 2] 현재 예산 상한선 도출
+        // 2. 예산 상한선
         const budgetConstraint = this.strategies.find(s => s.getCurrentMaxLimit);
         const maxLimit = budgetConstraint ? budgetConstraint.getCurrentMaxLimit() : Infinity;
 
-        // [탐색 최적화] 스타일별 그룹 탐색
-        const allStyles = [...new Set(this.config.foods.flatMap(f => f.style || ["기타"]))];
+        // 3. 스타일 추출 (없으면 "기타" 부여)
+        const allStyles = [...new Set(this.config.foods.flatMap(f => 
+            (f.style && f.style.length > 0) ? f.style : ["기타"]
+        ))];
+
         let bestOverallSet = null;
         let highestScore = -Infinity;
+        let lastFailureReason = "";
 
         allStyles.forEach(targetStyle => {
-            // 금지 재료 포함 메뉴 및 예산 초과 메뉴 원천 배제
+            // 해당 스타일에 맞는 안전한 음식 풀 생성
             const safePool = this.config.foods.filter(f => {
-                const isStyleMatch = (f.style || []).includes(targetStyle);
+                const fStyles = (f.style && f.style.length > 0) ? f.style : ["기타"];
+                const isStyleMatch = fStyles.includes(targetStyle);
                 const isPriceOk = this.calculateCost(f) <= maxLimit;
                 const isBanned = Object.keys(f.ingredients || {}).some(ing => bannedIngredients.has(ing));
                 return isStyleMatch && isPriceOk && !isBanned;
             });
 
-            for (let attempt = 0; attempt < 30; attempt++) {
-                if (safePool.length === 0) break;
+            if (safePool.length === 0) {
+                lastFailureReason = `${targetStyle} 스타일: 조건(예산/재료)에 맞는 음식이 없음`;
+                return;
+            }
+
+            for (let attempt = 0; attempt < 20; attempt++) {
                 const candidate = this.createMealSet(safePool);
                 const context = {
                     history: this.history, historyNames, currentDate: dateStr,
@@ -153,21 +129,32 @@ export class MealPlanner {
                 }
             }
         });
+
         return bestOverallSet || { 
-                name: "생성 실패", 
-                items: [], // 빈 배열 보장
-                totalCost: 0, 
-                error: true 
-            };
+            name: "생성 실패", 
+            items: [], 
+            totalCost: 0, 
+            error: true, 
+            reason: lastFailureReason || "모든 스타일에서 적합한 조합을 찾지 못함" 
+        };
     }
 
     createMealSet(pool) {
         const { categories } = this.config;
         const items = categories.map(cat => {
-            const catPool = pool.filter(f => f.category === cat);
-            const finalPool = catPool.length > 0 ? catPool : this.config.foods.filter(f => f.category === cat);
-            return finalPool[Math.floor(Math.random() * finalPool.length)];
+            // 1. 우선 safePool(스타일/예산 충족)에서 찾기
+            let catPool = pool.filter(f => f.category === cat);
+            // 2. 없으면 전체 음식 중 해당 카테고리에서 찾기 (완전 실패 방지)
+            if (catPool.length === 0) {
+                catPool = this.config.foods.filter(f => f.category === cat);
+            }
+            // 3. 그것도 없으면 더미 데이터 반환
+            if (catPool.length === 0) {
+                return { name: `미등록(${cat})`, ingredients: {}, category: cat };
+            }
+            return catPool[Math.floor(Math.random() * catPool.length)];
         });
+
         return {
             items,
             name: items.map(i => i.name).join(", "),
@@ -179,8 +166,11 @@ export class MealPlanner {
         const items = Array.isArray(target) ? target : (target.items || [target]);
         return items.reduce((sum, item) => {
             if (!item.ingredients) return sum;
-            return sum + Object.entries(item.ingredients).reduce((s, [n, w]) =>
-                s + (this.config.ingredientPrices[n] * w / 100), 0);
+            const itemCost = Object.entries(item.ingredients).reduce((s, [n, w]) => {
+                const price = this.config.ingredientPrices[n] || 0;
+                return s + (price * w / 100);
+            }, 0);
+            return sum + itemCost;
         }, 0);
     }
 }

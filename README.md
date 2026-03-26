@@ -1,23 +1,16 @@
-# MealPlanner
-사용자의 예산, 영양, 취향을 고려하여 최적의 식단 조합을 찾아주는 지능형 식단 생성기입니다.
+# React + Vite
 
-## 입력
-### 기본 설정
-- 기간: 시작 날짜 ~ 종료 날짜
-- 빈도: 하루 식사 횟수(2회)
-- 식단 구성: 예) 주식 1, 국 1, 메인 반찬 1, 밑반찬 2 등
-- 확정 식단: 특정 일시의 고정 메뉴(예: 10/24 저녁 - 뷔페)
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-### 음식, 재료 정보
-- 음식: 이름, 포함 재료 및 중량, 영양 정보, 카테고리(주식, 국, 메인, 밑반찬 등)
-- 재료: 이름, 100g당 가격 정보
+Currently, two official plugins are available:
 
-### 조건
-- 예산: 기간에 사용 가능한 예산
-    - 이월 예산 시스템: 매 끼니마다 설정된 상한선을 넘을 수 없으며, 절약분은 이후 끼니에 고르게 배분
-- 건강: 끼니별 영양소 섭취량 보장
-- 재고 우선 처리: 현재 보유중인 재료 우선 활용
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## 출력
-- 최적화된 식단표: 날짜별/끼니별 음식 조합, 예상 비용, 영양 상태
-- 알림: 조건 만족 실패 시 원인 알림 메시지
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
