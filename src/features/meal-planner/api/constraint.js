@@ -68,7 +68,7 @@ export class RepetitionPenaltyStrategy {
  * [Strategy 2] 끼니 단위 간격 제약 (Soft)
  * 지정된 끼니 이내 중복 재료 발견 시 감점(-100) 처리합니다.
  */
-export class MealIntervalConstraint {
+export class IngredientIntervalConstraint {
     constructor(ingredientName, minMealInterval) {
         this.ingredientName = ingredientName;
         this.minMealInterval = minMealInterval;

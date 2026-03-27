@@ -74,7 +74,7 @@ function RecipeFormModal({ recipe, initialName, onSave, onClose }) {
                     </div>
                     {/* --- 스타일(태그) 입력 섹션 --- */}
                     <div className="styles-section">
-                        <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                        <div className="section-header">
                             <h3>스타일 태그</h3>
                             <button type="button" className="add-tag-btn" onClick={addStyleTag}>+ 추가</button>
                         </div>
@@ -97,7 +97,7 @@ function RecipeFormModal({ recipe, initialName, onSave, onClose }) {
 
                     {/* --- 재료 입력 섹션 --- */}
                     <div className="ingredients-section">
-                        <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                        <div className="section-header">
                             <h3>재료 구성</h3>
                             <button type="button" className="add-ing-btn" onClick={addIngredientRow}>+ 재료 추가</button>
                         </div>

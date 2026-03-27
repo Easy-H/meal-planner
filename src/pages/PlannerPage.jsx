@@ -3,125 +3,161 @@ import { LocalRecipe as recipeService } from '../features/recipes/api/LocalRecip
 import { priceService } from '../features/inventory/api/priceService';
 import { settingService } from '../common/api/settingService';
 import { MealPlanner } from '../features/meal-planner/api/meal-planner';
-import { DynamicBudgetConstraint, RepetitionPenaltyStrategy } from '../features/meal-planner/api/constraint';
-import SettingManager from '../features/meal-planner/components/SettingManager';
+import { DynamicBudgetConstraint, RepetitionPenaltyStrategy, IngredientIntervalConstraint } from '../features/meal-planner/api/constraint';
+
+import CalendarView from '../features/meal-planner/components/CalendarView';
+import RecipeSelectorModal from '../features/meal-planner/components/RecipeSelectorModal';
+import GeneratorConfigModal from '../features/meal-planner/components/GeneratorConfigModal';
 
 function PlannerPage() {
-    // 1. 외부 주입 데이터 상태
     const [foods, setFoods] = useState([]);
     const [prices, setPrices] = useState({});
+    const [settings, setSettings] = useState({ categories: '', schedule: { 1: 3, 2: 3, 3: 3, 4: 3, 5: 3, 6: 2, 0: 2 } });
 
-    // 2. 설정 관련 상태
-    const [settings, setSettings] = useState({ categories: '', schedule: { 0: 3, 1: 3, 2: 3, 3: 3, 4: 3, 5: 3, 6: 3 } });
-    const [constraints, setConstraints] = useState({ repetition: true });
+    const [plan, setPlan] = useState(() => {
+        const saved = localStorage.getItem('mp_current_plan');
+        return saved ? JSON.parse(saved) : {};
+    });
 
-    // 3. 입력 필드 및 결과 상태
     const [startDate, setStartDate] = useState('2026-03-24');
     const [endDate, setEndDate] = useState('2026-03-30');
-    const [budget, setBudget] = useState(100000);
-    const [plan, setPlan] = useState(null);
 
-    // 초기 데이터 주입 (외부 Service 활용)
+    // --- 모달 제어 상태 ---
+    const [isConfigOpen, setIsConfigOpen] = useState(false);
+    const [selectorConfig, setSelectorConfig] = useState(null);
+
+    // --- 통합 자동 생성 설정 (예산 포함) ---
+    const [autoConfigs, setAutoConfigs] = useState({
+        budget: 100000,
+        avoidRepetition: true,
+        minIngredientInterval: 3
+    });
+
     useEffect(() => {
         setFoods(recipeService.getRecipes());
         setPrices(priceService.getPrices());
-        setSettings(settingService.getSettings());
+        const savedSettings = settingService.getSettings();
+        if (savedSettings) setSettings(savedSettings);
     }, []);
 
-    const handleGenerate = () => {
-        if (foods.length === 0) return alert("등록된 레시피가 없습니다.");
+    useEffect(() => {
+        localStorage.setItem('mp_current_plan', JSON.stringify(plan));
+    }, [plan]);
 
-        // MealPlanner 엔진 설정
+    // RecipeSelectorModal에서 넘어온 아이템 배열로 식단을 생성/수정하는 함수
+    const handleSaveManualMeal = (selectedItems) => {
+        if (!selectorConfig) return;
+        const { date, index } = selectorConfig;
+
+        const totalCost = selectedItems.reduce((sum, item) => {
+            return sum + Object.entries(item.ingredients || {}).reduce((s, [n, w]) => {
+                return s + ((prices[n] || 0) * w / 100);
+            }, 0);
+        }, 0);
+
+        const newPlan = { ...plan };
+        if (!newPlan[date]) {
+            const needed = settings.schedule[new Date(date).getDay()] || 0;
+            newPlan[date] = Array(needed).fill(null);
+        }
+
+        newPlan[date][index] = {
+            name: selectedItems.map(it => it.name).join(' + '),
+            items: selectedItems,
+            totalCost: totalCost,
+            allIngredients: new Set(selectedItems.flatMap(it => Object.keys(it.ingredients || {}))),
+            isFixed: true // 사람이 직접 만든 것은 자동 채우기가 건드리지 못하게 함
+        };
+
+        setPlan(newPlan);
+        setSelectorConfig(null);
+    };
+
+    const handleAutoFill = () => {
         const config = {
-            startDate,
-            endDate,
-            foods,
+            startDate, endDate, foods,
             ingredientPrices: prices,
-            totalBudget: Number(budget),
+            totalBudget: Number(autoConfigs.budget),
             categories: settings.categories.split(',').map(c => c.trim()),
             schedule: settings.schedule
         };
 
         const planner = new MealPlanner(config);
+        planner.addConstraints(new DynamicBudgetConstraint(Number(autoConfigs.budget)));
 
-        // 제약 조건 주입
-        planner.addConstraints(new DynamicBudgetConstraint(Number(budget)));
-        if (constraints.repetition) {
-            planner.addConstraints(new RepetitionPenaltyStrategy(-1000000));
+        if (autoConfigs.avoidRepetition) {
+            planner.addConstraints(new RepetitionPenaltyStrategy(-5000));
         }
 
-        const result = planner.generate();
-        setPlan(result);
+        if (autoConfigs.minIngredientInterval > 0) {
+            const mainIngredients = ["돼지고기", "소고기", "닭고기", "생선"];
+            mainIngredients.forEach(ing => {
+                planner.addConstraints(new IngredientIntervalConstraint(ing, autoConfigs.minIngredientInterval));
+            });
+        }
+
+        const newPlan = planner.generate(plan);
+        setPlan({ ...newPlan });
+        setIsConfigOpen(false); // 생성 후 모달 닫기
+    };
+
+    const handleClearSlot = (date, index) => {
+        const newPlan = { ...plan };
+        if (newPlan[date]) {
+            newPlan[date][index] = null;
+            setPlan(newPlan);
+        }
     };
 
     return (
-        <div className="planner-page">
-            <div className="planner-layout">
-                {/* 왼쪽: 설정 섹션 */}
-                <section className="config-side">
-                    <div className="card">
-                        <h3>기본 일정 및 예산</h3>
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            flexDirection: 'row',
+        <>
+            <header className="planner-toolbar card">
+                <div className="date-picker-row">
+                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                    <span>~</span>
+                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                </div>
+            </header>
 
-                        }}>
-                            <div className="input-group">
-                                <label>시작일</label>
-                                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-                            </div>
-                            <div className="input-group">
-                                <label>종료일</label>
-                                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-                            </div>
-                            <div className="input-group">
-                                <label>총 예산</label>
-                                <input type="number" value={budget} onChange={e => setBudget(e.target.value)} />
-                            </div>
-                        </div>
-                    </div>
-
-                    <SettingManager
-                        settings={settings}
-                        onUpdate={(newSets) => {
-                            setSettings(newSets);
-                            settingService.saveSettings(newSets); // 설정 변경 시 즉시 저장
-                        }}
-                        constraints={constraints}
-                        setConstraints={setConstraints}
-                    />
-
-                    <button className="generate-btn" onClick={handleGenerate}>
-                        식단 생성하기
-                    </button>
-                </section>
-
-                {/* 오른쪽: 결과 출력 섹션 */}
-                <section className="result-side">
-                    {plan ? (
-                        <div className="plan-results">
-                            {Object.entries(plan).map(([date, meals]) => (
-                                <div key={date} className="day-result card">
-                                    <h4>{date}</h4>
-                                    {meals.map((meal, idx) => (
-                                        <div key={idx} className={`meal-item ${meal.error ? 'error' : ''}`}>
-                                            <span className="meal-name">{meal.name}</span>
-                                            <span className="meal-cost">₩{meal.totalCost?.toLocaleString()}</span>
-                                            {meal.error && <p className="error-text">{meal.reason}</p>}
-                                        </div>
-                                    ))}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="empty-state">
-                            <p>설정을 확인하고 버튼을 눌러 식단을 생성하세요.</p>
-                        </div>
-                    )}
-                </section>
+            <div className="card" style={{ display: 'flex', flexDirection: 'row', gap: '10px', justifyContent: 'center' }}>
+                <button className="secondary-btn" onClick={() => setIsConfigOpen(true)}>생성 설정</button>
+                <button className="primary-btn pulse" onClick={handleAutoFill}>자동 채우기</button>
+                <button className="outline-btn" onClick={() => { if (confirm("초기화?")) setPlan({}); }}>초기화</button>
             </div>
-        </div>
+
+            <CalendarView
+                startDate={startDate}
+                endDate={endDate}
+                plan={plan}
+                config={settings}
+                onClearSlot={handleClearSlot}
+                onOpenSelector={(date, index) => setSelectorConfig({ date, index })}
+            />
+
+            {/* 생성 설정 모달 */}
+            {isConfigOpen && (
+                <GeneratorConfigModal
+                    configs={autoConfigs}
+                    setConfigs={setAutoConfigs}
+                    onClose={() => setIsConfigOpen(false)}
+                    onGenerate={handleAutoFill}
+                />
+            )}
+
+            {/* 레시피 선택 모달 */}
+            {selectorConfig && (
+                <RecipeSelectorModal
+                    foods={foods}
+                    currentMeal={plan[selectorConfig.date][selectorConfig.index]}
+                    onSave={(recipe) => {
+                        /* handleSelectRecipe 로직 그대로 사용 */
+                        handleSaveManualMeal(recipe);
+                        setSelectorConfig(null);
+                    }}
+                    onClose={() => setSelectorConfig(null)}
+                />
+            )}
+        </>
     );
 }
 

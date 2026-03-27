@@ -28,34 +28,50 @@ export class MealPlanner {
         return count;
     }
 
-    generate() {
+    // generate() 메서드 내부 로직 수정 제안
+    generate(existingPlan = {}) {
         const { startDate, endDate, foods } = this.config;
-        const result = {};
+        const result = { ...existingPlan }; // 기존에 저장된(수동 지정된) 식단 복사
         this.history = [];
+
+        // 1. 기존 식단을 히스토리에 먼저 등록 (중복 방지 및 제약 조건 계산용)
+        Object.entries(existingPlan).forEach(([date, meals]) => {
+            meals.forEach((meal, idx) => {
+                if (meal && !meal.error) {
+                    this.history.push({
+                        date, mealIndex: idx,
+                        foodNames: meal.items.map(it => it.name),
+                        ingredients: meal.allIngredients,
+                        isFixed: true
+                    });
+                }
+            });
+        });
 
         let curr = new Date(startDate);
         while (curr <= new Date(endDate)) {
             const dateStr = curr.toISOString().split('T')[0];
             const mealsNeeded = this.getMealsPerDay(curr);
-            result[dateStr] = [];
 
-            if (mealsNeeded > 0) {
-                for (let i = 0; i < mealsNeeded; i++) {
-                    const finalMeal = this.findBestMeal(dateStr, i);
-                    
-                    // 상태 업데이트 (예산 이월 등)
-                    this.strategies.forEach(s => s.updateState?.(finalMeal.totalCost || 0));
+            if (!result[dateStr]) result[dateStr] = Array(mealsNeeded).fill(null);
 
-                    if (!finalMeal.error) {
-                        this.history.push({
-                            date: dateStr, 
-                            mealIndex: i,
-                            foodNames: finalMeal.items.map(it => it.name),
-                            ingredients: finalMeal.allIngredients
-                        });
-                    }
-                    result[dateStr].push(finalMeal);
+            for (let i = 0; i < mealsNeeded; i++) {
+                // 이미 식단이 채워져 있다면 스킵 (수동 지정 및 이전 생성 결과 보존)
+                if (result[dateStr][i] && !result[dateStr][i].error) continue;
+
+                // 비어있는 슬롯만 생성
+                const finalMeal = this.findBestMeal(dateStr, i);
+
+                this.strategies.forEach(s => s.updateState?.(finalMeal.totalCost || 0));
+
+                if (!finalMeal.error) {
+                    this.history.push({
+                        date: dateStr, mealIndex: i,
+                        foodNames: finalMeal.items.map(it => it.name),
+                        ingredients: finalMeal.allIngredients
+                    });
                 }
+                result[dateStr][i] = finalMeal;
             }
             curr.setDate(curr.getDate() + 1);
         }
@@ -64,7 +80,7 @@ export class MealPlanner {
 
     findBestMeal(dateStr, mealIndex) {
         const historyNames = this.history.flatMap(h => h.foodNames || []);
-        
+
         // 1. 금지 재료 계산
         const bannedIngredients = new Set();
         this.strategies.filter(s => s.ingredientName).forEach(constraint => {
@@ -84,7 +100,7 @@ export class MealPlanner {
         const maxLimit = budgetConstraint ? budgetConstraint.getCurrentMaxLimit() : Infinity;
 
         // 3. 스타일 추출 (없으면 "기타" 부여)
-        const allStyles = [...new Set(this.config.foods.flatMap(f => 
+        const allStyles = [...new Set(this.config.foods.flatMap(f =>
             (f.style && f.style.length > 0) ? f.style : ["기타"]
         ))];
 
@@ -130,12 +146,12 @@ export class MealPlanner {
             }
         });
 
-        return bestOverallSet || { 
-            name: "생성 실패", 
-            items: [], 
-            totalCost: 0, 
-            error: true, 
-            reason: lastFailureReason || "모든 스타일에서 적합한 조합을 찾지 못함" 
+        return bestOverallSet || {
+            name: "생성 실패",
+            items: [],
+            totalCost: 0,
+            error: true,
+            reason: lastFailureReason || "모든 스타일에서 적합한 조합을 찾지 못함"
         };
     }
 
