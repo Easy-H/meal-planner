@@ -46,7 +46,7 @@ function RecipeSelectorModal({ foods, currentMeal, onSave, onClose }) {
                                     display: 'flex', flexDirection: 'row',
                                     justifyContent: 'space-between'
                                 }}>
-                                <h3>{it.name}</h3>
+                                <strong>{it.name}</strong>
                                 <button onClick={() => toggleItem(it)}>✕</button>
                             </div>
                         ))}
@@ -76,8 +76,8 @@ function RecipeSelectorModal({ foods, currentMeal, onSave, onClose }) {
                                 }}
                             >
                                 <div className="item-info">
-                                    <span className="cat">[{food.category}]</span>
                                     <strong>{food.name}</strong>
+                                    <span className="cat">({food.category})</span>
                                 </div>
                                 <div className="item-plus">{selectedItems.find(it => it.id === food.id) ? '✓' : '＋'}</div>
                             </div>

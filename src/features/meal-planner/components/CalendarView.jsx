@@ -75,7 +75,7 @@ function CalendarView({ startDate, endDate, plan, config, onClearSlot, onOpenSel
                                         key={`${date}-${idx}`}
                                         meal={dailyMeals[idx]}
                                         onOpenSelector={() => onOpenSelector(date, idx)}
-                                        onClearSlot={() => onClearSlot(date, idx)}
+                                        onRemove={() => onClearSlot(date, idx)}
                                     />
                                 ))}
                             </div>

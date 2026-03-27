@@ -109,6 +109,22 @@ function PlannerPage() {
         }
     };
 
+    const getMeal = () => {
+        if (!plan) {
+            return null;
+        }
+        if (!selectorConfig) {
+            return null;
+        }
+        const dayPlan = plan[selectorConfig.date];
+        if (!dayPlan) {
+            return null;
+        }
+        return dayPlan[selectorConfig.index];
+    }
+
+    const currentMeal = getMeal();
+
     return (
         <>
             <header className="planner-toolbar card">
@@ -148,7 +164,7 @@ function PlannerPage() {
             {selectorConfig && (
                 <RecipeSelectorModal
                     foods={foods}
-                    currentMeal={plan[selectorConfig.date][selectorConfig.index]}
+                    currentMeal={currentMeal}
                     onSave={(recipe) => {
                         /* handleSelectRecipe 로직 그대로 사용 */
                         handleSaveManualMeal(recipe);
