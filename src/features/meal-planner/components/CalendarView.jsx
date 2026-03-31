@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react';
 import MealSlot from './MealSlot';
 
-function CalendarView({ startDate, endDate, plan, config, onClearSlot, onOpenSelector }) {
-    const [viewMode, setViewMode] = useState('grid'); // 'list' (현재 형태), 'calendar' (실제 달력)
+function CalendarView({ startDate, viewMode, endDate, plan, onClearSlot, onOpenSelector }) {
 
     // 1. 시작일부터 종료일까지의 날짜 배열 생성
     const dateArray = useMemo(() => {
@@ -18,6 +17,7 @@ function CalendarView({ startDate, endDate, plan, config, onClearSlot, onOpenSel
 
     // 2. 실제 달력 형태를 위한 빈 칸(Padding) 계산 (첫 날의 요일 기준)
     const calendarPadding = useMemo(() => {
+        if (dateArray.length < 1) return [];
         if (viewMode !== 'calendar') return [];
         const firstDate = new Date(dateArray[0]);
         const dayOfWeek = firstDate.getDay(); // 0(일) ~ 6(토)
@@ -27,20 +27,6 @@ function CalendarView({ startDate, endDate, plan, config, onClearSlot, onOpenSel
     return (
         <div className="calendar-view-container">
             {/* 상단 뷰 전환 컨트롤바 */}
-            <div className="view-switcher card">
-                <button 
-                    className={viewMode === 'list' ? 'active' : ''} 
-                    onClick={() => setViewMode('list')}
-                >📝 리스트형</button>
-                <button 
-                    className={viewMode === 'grid' ? 'active' : ''} 
-                    onClick={() => setViewMode('grid')}
-                >📱 그리드형</button>
-                <button 
-                    className={viewMode === 'calendar' ? 'active' : ''} 
-                    onClick={() => setViewMode('calendar')}
-                >📅 달력형 (7일)</button>
-            </div>
 
             {/* 메인 렌더링 영역 */}
             <div className={`planner-display ${viewMode}-view`}>
@@ -60,24 +46,30 @@ function CalendarView({ startDate, endDate, plan, config, onClearSlot, onOpenSel
                 {dateArray.map(date => {
                     const d = new Date(date);
                     const dayOfWeek = d.getDay();
-                    const mealsNeeded = config.schedule[dayOfWeek] || 0;
+                    const mealsNeeded = 0;
                     const dailyMeals = plan[date] || Array(mealsNeeded).fill(null);
 
                     return (
                         <div key={date} className={`calendar-day day-${dayOfWeek}`}>
                             <div className="day-header">
                                 <span className="date-num">{d.getDate()}일</span>
-                                <span className="day-text">({['일','월','화','수','목','금','토'][dayOfWeek]})</span>
+                                <span className="day-text">({['일', '월', '화', '수', '목', '금', '토'][dayOfWeek]})</span>
                             </div>
                             <div className="meal-slots">
-                                {Array.from({ length: mealsNeeded }).map((_, idx) => (
-                                    <MealSlot 
+                                {Array.from({ length: dailyMeals.length }).map((_, idx) => (
+                                    <MealSlot
                                         key={`${date}-${idx}`}
                                         meal={dailyMeals[idx]}
                                         onOpenSelector={() => onOpenSelector(date, idx)}
                                         onRemove={() => onClearSlot(date, idx)}
                                     />
                                 ))}
+
+                                <MealSlot
+                                    meal={null}
+                                    onOpenSelector={() => onOpenSelector(date, dailyMeals.length)}
+
+                                />
                             </div>
                         </div>
                     );

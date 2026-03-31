@@ -20,9 +20,9 @@ function App() {
       </div>
       <nav className="tab-nav">
         {/* NavLink를 사용하면 현재 활성화된 탭에 'active' 클래스가 자동으로 붙습니다. */}
-        <NavLink to="/recipes" className={({ isActive }) => isActive ? 'active' : ''}>레시피 관리</NavLink>
-        <NavLink to="/planner" className={({ isActive }) => isActive ? 'active' : ''}>식단 생성</NavLink>
-        <NavLink to="/inventory" className={({ isActive }) => isActive ? 'active' : ''}>원가 관리</NavLink>
+        <NavLink to="/recipes" className={({ isActive }) => isActive ? 'active' : ''}>🍛 레시피 관리</NavLink>
+        <NavLink to="/planner" className={({ isActive }) => isActive ? 'active' : ''}>🍱 식단 생성</NavLink>
+        <NavLink to="/inventory" className={({ isActive }) => isActive ? 'active' : ''}>🥕 원가 관리</NavLink>
       </nav>
     </HashRouter>
   );

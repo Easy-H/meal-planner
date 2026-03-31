@@ -18,35 +18,36 @@ function RecipeManager({ foods, onEdit, onDelete, onAdd }) {
 
     return (
         <>
-            <div className="page-header" style={{ 
-                display: 'flex', 
-                flexDirection: 'row', 
-                justifyContent: 'space-between', 
-                alignItems: 'stretch', 
-                gap: '12px',
-                marginBottom: '20px' 
-            }}>
-                {/* 검색창: value와 onChange 연결 */}
-                <input 
-                    type="text" 
-                    placeholder="요리명, 카테고리 또는 재료 검색..." 
-                    style={{ flex: 3, padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <button 
-                    className="primary-btn" 
-                    onClick={()=>{onAdd(searchTerm)}} // 부모의 모달 오픈 함수 호출
-                    style={{ whiteSpace: 'nowrap' }}
-                >
-                    + 새 레시피 등록
-                </button>
-            </div>
+            <header>
+                <div className="page-header" style={{ 
+                    display: 'flex', 
+                    flexDirection: 'row', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'stretch', 
+                    gap: '12px',
+                }}>
+                    {/* 검색창: value와 onChange 연결 */}
+                    <input 
+                        type="text" 
+                        placeholder="요리명, 카테고리 또는 재료 검색..." 
+                        style={{ flex: 3, padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <button 
+                        className="primary-btn" 
+                        onClick={()=>{onAdd(searchTerm)}} // 부모의 모달 오픈 함수 호출
+                        style={{ whiteSpace: 'nowrap' }}
+                    >
+                        + 새 레시피 등록
+                    </button>
+                </div>
+            </header>
 
             <div className="recipe-grid">
                 {filteredFoods.length > 0 ? (
                     filteredFoods.map((food) => (
-                        <div key={food.id} className="recipe-item-card card">
+                        <div key={food.id} className="recipe-item-card" onClick={() => onEdit(food)}>
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'row', gap: '8px' }}>
                                 <div className="recipe-info">
                                     <strong style={{ fontSize: '1.1rem' }}>{food.name}</strong>
@@ -61,7 +62,6 @@ function RecipeManager({ foods, onEdit, onDelete, onAdd }) {
                                 </div>
                             </div>
                             <div className="recipe-actions" style={{ display: 'flex', gap: '8px'}}>
-                                <button onClick={() => onEdit(food)}>편집</button>
                                 <button className="del-text" onClick={() => onDelete(food.id)} style={{ color: 'red' }}>삭제</button>
                             </div>
                         </div>

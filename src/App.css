@@ -149,7 +149,6 @@
 }
 
 .app-container {
-	padding: 20px;
 	width: 90%;
 	margin: 0 auto;
 	font-family: sans-serif;
@@ -164,7 +163,7 @@
 
 .card {
 	border: 1px solid #ddd;
-	padding: 15px;
+	padding: 10px;
 	border-radius: 8px;
 	background: #fdfdfd;
 }
@@ -185,7 +184,7 @@
 }
 
 .day-inputs input {
-	width: 30px;
+	width: 15px;
 	text-align: center;
 }
 
@@ -202,7 +201,6 @@
 	padding: 15px;
 	background: #4caf50;
 	color: white;
-	border: none;
 	border-radius: 8px;
 	font-size: 1.1rem;
 	cursor: pointer;
@@ -259,6 +257,7 @@
 	left: 0;
 	right: 0;
 	background-color: white;
+	align-items: center;
 }
 
 .tab-nav a {
@@ -267,6 +266,7 @@
 	padding: 10px 20px;
 	background: #f5f5f5;
 	flex: 1;
+	text-align: center;
 }
 
 .tab-nav a.active {
@@ -279,26 +279,27 @@
 }
 
 .tab-content {
-	padding: 20px;
+	padding: 10px;
 	margin-bottom: 50px;
 	background: #fff;
 	border: 1px solid #ddd;
 	border-top: none;
 	display: flex;
 	flex-direction: column;
-	gap: 20px;
+	gap: 10px;
 }
 
 .primary-btn {
 	background: #4caf50;
 	color: white;
-	border: none;
 	cursor: pointer;
 	border-radius: 6px;
 }
 
 .recipe-item-card {
 	display: flex;
+	padding-bottom: 10px;
+	border-bottom: 1px solid black;
 }
 
 .recipe-grid {
@@ -350,19 +351,36 @@
 }
 
 button {
-	padding: 5px 20px;
-	font-size: 16px;
+	padding: 8px;
+	font-size: 12px;
+	border-radius: 8px;
+	border: none;
+	font-weight: bolder;
+	color: black;
+	background-color: white;
 }
+
+.secondary-btn {
+	background-color: #6799fa;
+}
+
 
 input {
 	font-size: 20px;
-	padding: 2px 10px;
+	padding: 5px 10px;
 	border-radius: 8px;
+}
+
+input[type=date] {
+	font-size: 12px;
 }
 
 .section-header {
 	display: flex;
 	justify-content: space-between;
+	padding-bottom: 8px;
+	margin-bottom: 10px;
+	border-bottom: 2px solid black;
 }
 
 .page-container {
@@ -407,7 +425,7 @@ h3 {
 }
 
 select {
-	font-size: 20px;
+	font-size: 12px;
 	padding: 5px;
 }
 
@@ -421,7 +439,6 @@ select {
 	background: #fdfdfd;
 	border: 1px solid #eee;
 	border-radius: 10px;
-	min-height: 200px;
 	display: flex;
 	flex-direction: column;
 }
@@ -450,6 +467,7 @@ select {
 	font-size: 0.9rem;
 	position: relative;
 	transition: all 0.2s;
+	align-items: center;
 }
 
 .meal-slot.empty:hover {

@@ -78,7 +78,6 @@ function RecipeFormModal({ recipe, initialName, onSave, onClose }) {
                             <h3>스타일 태그</h3>
                             <button type="button" className="add-tag-btn" onClick={addStyleTag}>+ 추가</button>
                         </div>
-                        <hr />
                         <div className="style-tags-container">
                             {styleList.map((s, idx) => (
                                 <div key={idx} className="style-tag-input"
@@ -87,7 +86,7 @@ function RecipeFormModal({ recipe, initialName, onSave, onClose }) {
                                         value={s} 
                                         onChange={e => updateStyleTag(idx, e.target.value)} 
                                         placeholder="예: 한식"
-                                        style={{width: '80px'}}
+                                        style={{width: '65px'}}
                                     />
                                     <button type="button" onClick={() => removeStyleTag(idx)}>✕</button>
                                 </div>
@@ -101,7 +100,6 @@ function RecipeFormModal({ recipe, initialName, onSave, onClose }) {
                             <h3>재료 구성</h3>
                             <button type="button" className="add-ing-btn" onClick={addIngredientRow}>+ 재료 추가</button>
                         </div>
-                        <hr/>
                         <div style={{display: 'flex', flexDirection: 'column', gap: '5px'}}>
                         {ingredientList.map((ing, idx) => (
                             <div key={idx} className="ingredient-row"
