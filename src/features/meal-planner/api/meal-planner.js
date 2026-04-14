@@ -78,7 +78,7 @@ export class MealPlanner {
         return result;
     }
 
-    findBestMeal(dateStr, mealIndex) {
+    findBestMeal(dateStr, mealIndex, excludedFoodNames = []) {
         const historyNames = this.history.flatMap(h => h.foodNames || []);
 
         // 1. 금지 재료 계산
@@ -139,6 +139,13 @@ export class MealPlanner {
                     totalScore += res.score;
                 }
 
+                // 현재 화면에 제안된 항목들과 중복될 경우 높은 벌점을 부여하여 새로운 조합을 유도합니다.
+                if (excludedFoodNames.length > 0) {
+                    const currentNames = candidate.items.map(it => it.name);
+                    const overlap = currentNames.filter(name => excludedFoodNames.includes(name)).length;
+                    totalScore -= (overlap * 10000); 
+                }
+
                 if (isValid && totalScore > highestScore) {
                     highestScore = totalScore;
                     bestOverallSet = { ...candidate, totalCost: this.calculateCost(candidate) };
@@ -171,10 +178,19 @@ export class MealPlanner {
             return catPool[Math.floor(Math.random() * catPool.length)];
         });
 
+        const totalNutrition = items.reduce((acc, item) => {
+            const nut = item.nutrition || {};
+            acc.carbs += (nut.carbs || 0);
+            acc.protein += (nut.protein || 0);
+            acc.fat += (nut.fat || 0);
+            return acc;
+        }, { carbs: 0, protein: 0, fat: 0 });
+
         return {
             items,
             name: items.map(i => i.name).join(", "),
-            allIngredients: new Set(items.flatMap(i => Object.keys(i.ingredients || {})))
+            allIngredients: new Set(items.flatMap(i => Object.keys(i.ingredients || {}))),
+            nutrition: totalNutrition
         };
     }
 
@@ -183,7 +199,13 @@ export class MealPlanner {
         return items.reduce((sum, item) => {
             if (!item.ingredients) return sum;
             const itemCost = Object.entries(item.ingredients).reduce((s, [n, w]) => {
-                const price = this.config.ingredientPrices[n] || 0;
+                const data = this.config.ingredientPrices[n];
+                if (data && typeof data === 'object') {
+                    // 새로운 객체 구조 기반 계산: (사용량 / 구매중량) * 구매가격
+                    return s + (w / (data.purchaseWeight || 100)) * (data.purchasePrice || 0);
+                }
+                // 하위 호환성 유지
+                const price = typeof data === 'number' ? data : 0;
                 return s + (price * w / 100);
             }, 0);
             return sum + itemCost;

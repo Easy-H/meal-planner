@@ -1,15 +1,20 @@
 import { useState, useMemo } from 'react';
 import MealSlot from './MealSlot';
+import NutrientChart from './NutrientChart';
 
 function CalendarView({ startDate, viewMode, endDate, plan, onClearSlot, onOpenSelector }) {
 
     // 1. 시작일부터 종료일까지의 날짜 배열 생성
     const dateArray = useMemo(() => {
         const dates = [];
-        let curr = new Date(startDate);
-        const end = new Date(endDate);
+        if (!startDate || !endDate) return dates;
+        let curr = new Date(startDate + 'T00:00:00');
+        const end = new Date(endDate + 'T00:00:00');
         while (curr <= end) {
-            dates.push(curr.toISOString().split('T')[0]);
+            const y = curr.getFullYear();
+            const m = String(curr.getMonth() + 1).padStart(2, '0');
+            const d = String(curr.getDate()).padStart(2, '0');
+            dates.push(`${y}-${m}-${d}`);
             curr.setDate(curr.getDate() + 1);
         }
         return dates;
@@ -44,14 +49,23 @@ function CalendarView({ startDate, viewMode, endDate, plan, onClearSlot, onOpenS
 
                 {/* 실제 날짜들 렌더링 */}
                 {dateArray.map(date => {
-                    const d = new Date(date);
+                    const d = new Date(date + 'T00:00:00');
                     const dayOfWeek = d.getDay();
                     const mealsNeeded = 0;
                     const dailyMeals = plan[date] || Array(mealsNeeded).fill(null);
 
+                    const dailyNutrition = dailyMeals.reduce((acc, m) => {
+                        if (m && m.nutrition) {
+                            acc.carbs += (m.nutrition.carbs || 0);
+                            acc.protein += (m.nutrition.protein || 0);
+                            acc.fat += (m.nutrition.fat || 0);
+                        }
+                        return acc;
+                    }, { carbs: 0, protein: 0, fat: 0 });
+
                     return (
                         <div key={date} className={`calendar-day day-${dayOfWeek}`}>
-                            <div className="day-header">
+                            <div className="day-header" style={{ textAlign: 'center', justifyContent: 'center' }}>
                                 <span className="date-num">{d.getDate()}일</span>
                                 <span className="day-text">({['일', '월', '화', '수', '목', '금', '토'][dayOfWeek]})</span>
                             </div>
@@ -71,6 +85,9 @@ function CalendarView({ startDate, viewMode, endDate, plan, onClearSlot, onOpenS
 
                                 />
                             </div>
+                            {dailyNutrition.carbs + dailyNutrition.protein + dailyNutrition.fat > 0 && (
+                                <NutrientChart nutrition={dailyNutrition} />
+                            )}
                         </div>
                     );
                 })}

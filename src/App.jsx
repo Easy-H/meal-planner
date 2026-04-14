@@ -1,7 +1,9 @@
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
+import { ChefHat, CalendarDays, Calculator, BarChart3 } from 'lucide-react';
 import PlannerPage from './pages/PlannerPage';
 import RecipePage from './pages/RecipePage';
 import InventoryPage from './pages/InventoryPage';
+import AnalysisPage from './pages/AnalysisPage';
 import './App.css';
 
 function App() {
@@ -15,14 +17,28 @@ function App() {
             <Route path="/planner" element={<PlannerPage />} />
             <Route path="/recipes" element={<RecipePage />} />
             <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/analysis" element={<AnalysisPage />} />
           </Routes>
         </main>
       </div>
       <nav className="tab-nav">
         {/* NavLink를 사용하면 현재 활성화된 탭에 'active' 클래스가 자동으로 붙습니다. */}
-        <NavLink to="/recipes" className={({ isActive }) => isActive ? 'active' : ''}>🍛 레시피 관리</NavLink>
-        <NavLink to="/planner" className={({ isActive }) => isActive ? 'active' : ''}>🍱 식단 생성</NavLink>
-        <NavLink to="/inventory" className={({ isActive }) => isActive ? 'active' : ''}>🥕 원가 관리</NavLink>
+        <NavLink to="/recipes" className={({ isActive }) => isActive ? 'active' : ''}>
+          <ChefHat size={20} strokeWidth={2.5} />
+          <span>레시피 관리</span>
+        </NavLink>
+        <NavLink to="/planner" className={({ isActive }) => isActive ? 'active' : ''}>
+          <CalendarDays size={20} strokeWidth={2.5} />
+          <span>식단 생성</span>
+        </NavLink>
+        <NavLink to="/analysis" className={({ isActive }) => isActive ? 'active' : ''}>
+          <BarChart3 size={20} strokeWidth={2.5} />
+          <span>식단 분석</span>
+        </NavLink>
+        <NavLink to="/inventory" className={({ isActive }) => isActive ? 'active' : ''}>
+          <Calculator size={20} strokeWidth={2.5} />
+          <span>식재료 사전</span>
+        </NavLink>
       </nav>
     </HashRouter>
   );

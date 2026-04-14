@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import * as XLSX from 'xlsx';
+import { Download, CalendarDays } from 'lucide-react';
 import { LocalRecipe as recipeService } from '../features/recipes/api/LocalRecipe';
 import { priceService } from '../features/inventory/api/priceService';
 import { settingService } from '../common/api/settingService';
@@ -9,6 +11,7 @@ import CalendarView from '../features/meal-planner/components/CalendarView';
 import RecipeSelectorModal from '../features/meal-planner/components/RecipeSelectorModal';
 import GeneratorConfigModal from '../features/meal-planner/components/GeneratorConfigModal';
 import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 
 function PlannerPage() {
     const [foods, setFoods] = useState([]);
@@ -19,7 +22,8 @@ function PlannerPage() {
         budget: 100000,
         avoidRepetition: true,
         minIngredientInterval: 3,
-        schedule: { 1: 3, 2: 3, 3: 3, 4: 3, 5: 3, 6: 2, 0: 2 } // 여기서 관리
+        schedule: { 1: 3, 2: 3, 3: 3, 4: 3, 5: 3, 6: 2, 0: 2 }, // 여기서 관리
+        categories: ["주식", "국", "메인반찬", "밑반찬"]
     });
 
     const [plan, setPlan] = useState(() => {
@@ -77,11 +81,12 @@ function PlannerPage() {
     };
 
     const handleAutoFill = () => {
+        if (!startDate || !endDate) return alert("시작일과 종료일을 모두 선택해주세요.");
         const config = {
             startDate, endDate, foods,
             ingredientPrices: prices,
             totalBudget: Number(autoConfigs.budget),
-            categories: ["주식", "국", "메인반찬", "밑반찬"], // 필요시 설정에서 가져옴
+            categories: autoConfigs.categories,
             schedule: autoConfigs.schedule
         };
 
@@ -100,9 +105,91 @@ function PlannerPage() {
         }
 
         const newPlan = planner.generate(plan);
-        setPlan({ ...newPlan });
-        setIsConfigOpen(false);
+        setPlan({ ...newPlan });        setIsConfigOpen(false);
     };
+
+    const handleGetSingleAutoMeal = (currentSelection = []) => {
+        if (!selectorConfig) return null;
+        const { date, index } = selectorConfig;
+
+        const config = {
+            startDate, endDate, foods,
+            ingredientPrices: prices,
+            totalBudget: Number(autoConfigs.budget),
+            categories: autoConfigs.categories,
+            schedule: autoConfigs.schedule
+        };
+
+        const planner = new MealPlanner(config);
+        
+        // 제약 조건 추가 (handleAutoFill과 동일)
+        planner.addConstraints(new DynamicBudgetConstraint(Number(autoConfigs.budget)));
+        if (autoConfigs.avoidRepetition) {
+            planner.addConstraints(new RepetitionPenaltyStrategy(-5000));
+        }
+        if (autoConfigs.minIngredientInterval > 0) {
+            const mainIngredients = ["돼지고기", "소고기", "닭고기", "생선"];
+            mainIngredients.forEach(ing => {
+                planner.addConstraints(new IngredientIntervalConstraint(ing, autoConfigs.minIngredientInterval));
+            });
+        }
+
+        // 현재까지 짜여진 식단(plan)을 planner 히스토리에 반영
+        planner.generate(plan); 
+
+        const excludedNames = currentSelection.map(it => it.name);
+        const bestMeal = planner.findBestMeal(date, index, excludedNames);
+
+        if (bestMeal.error) {
+            alert(bestMeal.reason);
+            return null;
+        }
+        return bestMeal.items;
+    };
+
+    const handleExportExcel = () => {
+        if (Object.keys(plan).length === 0) {
+            return alert("저장할 식단 데이터가 없습니다.");
+        }
+
+        const excelData = [];
+        // 날짜순으로 정렬하여 데이터 구성
+        const sortedDates = Object.keys(plan).sort();
+
+        sortedDates.forEach(date => {
+            const meals = plan[date];
+            const row = { "날짜": date };
+
+            // 각 끼니별 메뉴 이름 나열
+            meals.forEach((meal, idx) => {
+                row[`식단 ${idx + 1}`] = meal ? meal.name : "-";
+            });
+
+            // 해당 날짜의 총 영양소 합계 계산
+            const dailyNut = meals.reduce((acc, m) => {
+                if (m?.nutrition) {
+                    acc.carbs += (m.nutrition.carbs || 0);
+                    acc.protein += (m.nutrition.protein || 0);
+                    acc.fat += (m.nutrition.fat || 0);
+                }
+                return acc;
+            }, { carbs: 0, protein: 0, fat: 0 });
+
+            row["영양 요약(탄/단/지)"] = dailyNut.carbs > 0 
+                ? `${dailyNut.carbs}g / ${dailyNut.protein}g / ${dailyNut.fat}g` 
+                : "-";
+
+            excelData.push(row);
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "식단표");
+        
+        // 파일명: 식단표_시작일_종료일.xlsx
+        XLSX.writeFile(workbook, `MealPlan_${startDate}_${endDate}.xlsx`);
+    };
+
     const handleClearSlot = (date, index) => {
         const newPlan = { ...plan };
 
@@ -125,58 +212,75 @@ function PlannerPage() {
 
     return (
         <>
-            <header style={{
-                    display: 'flex', flexDirection: 'column',
-                    gap: '10px', position: 'sticky', top: 0,
-                    zIndex: 1000, backgroundColor: 'white',
-                    padding: '10px'
-                }}>
-                <div className="planner-toolbar"
-                style={{
-                    display: 'flex', flexDirection: 'row',
-                    justifyContent: 'space-between', flexWrap: 'wrap',
-                    gap: '10px'
-                }}>
-                <div className="date-picker-row">
-                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-                    <span>~</span>
-                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-
-                </div>
-                <select
-                    id="view-mode-select"
-                    className="view-dropdown"
-                    value={viewMode}
-                    onChange={(e) => setViewMode(e.target.value)}
-                >
-                    <option value="list">📝 리스트형</option>
-                    <option value="grid">📱 그리드형</option>
-                    <option value="calendar">📅 달력형 (7일)</option>
-                </select>
-            </div>
-            <div style={{
-                display: 'flex', flexDirection: 'row',
-                justifyContent: 'space-between', flexWrap: 'wrap',
-                gap: '10px', flex: 1
+            <div className="card cost-card" style={{ 
+                position: 'sticky', top: '15px', zIndex: 1000, 
+                padding: '15px 20px', marginBottom: '20px' 
             }}>
-                <button className="secondary-btn" onClick={() => { if (confirm("초기화하시겠습니까?")) setPlan({}); }}
-                    style={{ flex: 1 }}>초기화</button>
-                <button className="primary-btn pulse" onClick={handleAutoFill}
-                    style={{ flex: 1 }}>자동 채우기</button>
-                <button className="secondary-btn" onClick={() => setIsConfigOpen(true)}>⚙️</button>
+                <div className="toolbar" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '10px' }}>
+                        <CalendarDays size={20} color="var(--primary-color)" />
+                        <h3 style={{ whiteSpace: 'nowrap' }}>식단 플래너</h3>
+                    </div>
+                    
+                    <div className="date-picker-group" style={{ flex: '1 1 220px' }}>
+                        <CalendarDays size={18} color="var(--primary-color)" />
+                        <DatePicker
+                            selectsRange={true}
+                            startDate={new Date(startDate + 'T00:00:00')}
+                            endDate={endDate ? new Date(endDate + 'T00:00:00') : null}
+                            onChange={(update) => {
+                                const [start, end] = update;
+                                const formatLocal = (date) => {
+                                    if (!date) return null;
+                                    const y = date.getFullYear();
+                                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                                    const d = String(date.getDate()).padStart(2, '0');
+                                    return `${y}-${m}-${d}`;
+                                };
+                                if (start) setStartDate(formatLocal(start));
+                                setEndDate(end ? formatLocal(end) : null);
+                            }}
+                            dateFormat="yyyy-MM-dd"
+                            className="modern-datepicker range-picker"
+                            placeholderText="날짜 범위 선택"
+                        />
+                    </div>
 
+                    <select
+                        id="view-mode-select"
+                        className="view-dropdown"
+                        value={viewMode}
+                        onChange={(e) => setViewMode(e.target.value)}
+                        style={{ minWidth: '130px' }}
+                    >
+                        <option value="list">📝 리스트형</option>
+                        <option value="grid">📱 그리드형</option>
+                        <option value="calendar">📅 달력형 (7일)</option>
+                    </select>
+
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                        <button className="secondary-btn" onClick={() => { if (confirm("초기화하시겠습니까?")) setPlan({}); }}>초기화</button>
+                        <button className="primary-btn pulse" onClick={handleAutoFill}>자동 채우기</button>
+                        <button className="secondary-btn" onClick={handleExportExcel}
+                            style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: '#2d6a4f', color: 'white' }}>
+                            <Download size={16} /> 엑셀
+                        </button>
+                        <button className="secondary-btn" onClick={() => setIsConfigOpen(true)}>⚙️</button>
+                    </div>
+                </div>
             </div>
-            </header>
 
-            <CalendarView
-                startDate={startDate}
-                endDate={endDate}
-                viewMode={viewMode}
-                plan={plan}
-                defaultSchedule={autoConfigs.schedule} // 기본 식수 정보 전달
-                onClearSlot={handleClearSlot}
-                onOpenSelector={(date, index) => setSelectorConfig({ date, index })}
-            />
+            <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+                <CalendarView
+                    startDate={startDate}
+                    endDate={endDate}
+                    viewMode={viewMode}
+                    plan={plan}
+                    defaultSchedule={autoConfigs.schedule} // 기본 식수 정보 전달
+                    onClearSlot={handleClearSlot}
+                    onOpenSelector={(date, index) => setSelectorConfig({ date, index })}
+                />
+            </div>
 
             {isConfigOpen && (
                 <GeneratorConfigModal
@@ -192,6 +296,7 @@ function PlannerPage() {
                     foods={foods}
                     currentMeal={currentMeal}
                     onSave={handleSaveManualMeal}
+                    onAutoGenerate={handleGetSingleAutoMeal}
                     onClose={() => setSelectorConfig(null)}
                 />
             )}

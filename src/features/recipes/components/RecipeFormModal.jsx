@@ -35,18 +35,34 @@ function RecipeFormModal({ recipe, initialName, onSave, onClose }) {
     // --- 재료 관리 함수 ---
     const addIngredientRow = () => setIngredientList([...ingredientList, { name: '', weight: '' }]);
     const updateIngredient = (index, field, value) => {
-        const newList = [...ingredientList];
-        newList[index][field] = value;
-        setIngredientList(newList);
+        setIngredientList(prev => prev.map((item, i) => 
+            i === index ? { ...item, [field]: value } : item
+        ));
     };
     const removeIngredientRow = (index) => setIngredientList(ingredientList.filter((_, i) => i !== index));
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        
+        // 유효성 검사: 이름 확인
+        if (!name.trim()) return alert("레시피 이름을 입력해주세요.");
+
         const ingredientsObj = {};
+        let hasInvalidWeight = false;
+
         ingredientList.forEach(ing => {
-            if (ing.name && ing.weight) ingredientsObj[ing.name] = Number(ing.weight);
+            if (ing.name.trim()) {
+                const weightNum = Number(ing.weight);
+                if (isNaN(weightNum) || weightNum <= 0) {
+                    hasInvalidWeight = true;
+                }
+                ingredientsObj[ing.name.trim()] = weightNum;
+            }
         });
+
+        if (hasInvalidWeight) {
+            return alert("재료의 무게는 0보다 큰 숫자여야 합니다.");
+        }
 
         // 빈 값인 스타일 태그는 제외하고 저장
         const filteredStyles = styleList.filter(s => s.trim() !== '');
@@ -56,7 +72,7 @@ function RecipeFormModal({ recipe, initialName, onSave, onClose }) {
             category,
             style: filteredStyles.length > 0 ? filteredStyles : ['기타'],
             ingredients: ingredientsObj,
-            nutrition: { protein: 20 }
+            nutrition: { carbs: 50, protein: 20, fat: 15 }
         });
     };
 
