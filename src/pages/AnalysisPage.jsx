@@ -61,11 +61,11 @@ function AnalysisPage() {
 
     return (
         <div className="page-container">
-            <div className="card" style={{ marginBottom: '15px' }}>
-                <div className="analysis-summary-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-                    <div className="date-picker-group" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="card toolbar-card" style={{ marginBottom: '20px' }}>
+                <div className="toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <BarChart3 size={20} color="var(--primary-color)" />
-                        <h3 style={{ marginRight: '10px', whiteSpace: 'nowrap' }}>분석 리포트</h3>
+                        <h3 style={{ whiteSpace: 'nowrap' }}>식단 분석 리포트</h3>
                         <CalendarDays size={18} color="var(--primary-color)" />
                         <DatePicker
                             selectsRange={true}
@@ -81,22 +81,28 @@ function AnalysisPage() {
                             className="modern-datepicker range-picker"
                         />
                     </div>
-                    <div className="summary-stats" style={{ display: 'flex', gap: '40px', alignItems: 'center' }}>
-                        <div className="stat-item" style={{ textAlign: 'right' }}>
-                            <span className="label" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>총 예상 지출</span>
-                            <span className="value" style={{ fontSize: '1.6rem', color: 'var(--primary-color)', fontWeight: '800' }}>
-                                ₩{Math.floor(mealAnalysis.totalCost).toLocaleString()}
-                            </span>
-                        </div>
-                        <div className="stat-item nutrition-summary-box" style={{ width: '200px', borderLeft: '2px solid var(--border-light)', paddingLeft: '40px' }}>
-                            <span className="label" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', textAlign: 'center', display: 'block' }}>영양 균형 요약</span>
-                            <NutrientChart nutrition={mealAnalysis.totalNutrition} />
-                        </div>
+                </div>
+            </div>
+
+            <div className="card" style={{ marginBottom: '20px' }}>
+                <div className="content-toolbar" style={{ border: 'none', paddingBottom: '10px' }}>
+                    <h3 style={{ fontSize: '1rem' }}>📊 분석 요약</h3>
+                </div>
+                <div style={{ display: 'flex', gap: '40px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-around' }}>
+                    <div className="stat-item" style={{ textAlign: 'center', flex: '1 1 150px' }}>
+                        <span className="label" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>총 예상 지출</span>
+                        <span className="value" style={{ fontSize: '1.6rem', color: 'var(--primary-color)', fontWeight: '800' }}>
+                            ₩{Math.floor(mealAnalysis.totalCost).toLocaleString()}
+                        </span>
+                    </div>
+                    <div className="stat-item nutrition-summary-box" style={{ width: '200px', flex: '1 1 200px' }}>
+                        <span className="label" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', textAlign: 'center', display: 'block' }}>영양 균형 요약</span>
+                        <NutrientChart nutrition={mealAnalysis.totalNutrition} />
                     </div>
                 </div>
             </div>
 
-            <div className="card">
+            <div className="card table-card" style={{ overflow: 'hidden' }}>
                 <div className="content-toolbar">
                     <h3 style={{ fontSize: '1rem' }}>📦 상세 식재료 소요량 ({mealAnalysis.details.length})</h3>
                 </div>

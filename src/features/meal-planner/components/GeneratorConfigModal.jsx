@@ -65,7 +65,7 @@ function GeneratorConfigModal({ configs, setConfigs, onClose, onGenerate }) {
 
                 <div className="modal-actions">
                     <button className="secondary-btn" onClick={onClose}>취소</button>
-                    <button className="primary-btn" onClick={onGenerate}>설정 적용 및 생성</button>
+                    <button className="primary-btn" onClick={onGenerate}>적용 및 생성</button>
                 </div>
             </div>
         </div>

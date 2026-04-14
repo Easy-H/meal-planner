@@ -41,7 +41,7 @@ function RecipeManager({ foods, onEdit, onDelete, onAdd }) {
             </div>
             </div>
 
-            <div className="card table-card" style={{ padding: '0', overflow: 'hidden' }}>
+            <div className="card table-card" style={{ overflow: 'hidden' }}>
                 <div className="table-container" style={{ maxHeight: '65vh', border: 'none' }}>
                 <table className="cost-table">
                     <thead>

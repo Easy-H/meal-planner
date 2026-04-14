@@ -139,8 +139,8 @@ function RecipeFormModal({ recipe, initialName, onSave, onClose }) {
                         </div>
 
                     <div className="modal-actions">
-                        <button type="button" onClick={onClose} className="cancel-btn">취소</button>
-                        <button type="submit" className="primary-btn">저장하기</button>
+                        <button type="button" onClick={onClose} className="secondary-btn">취소</button>
+                        <button type="submit" className="primary-btn">저장</button>
                     </div>
                 </form>
             </div>

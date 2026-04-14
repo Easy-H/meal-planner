@@ -65,7 +65,7 @@ function CalendarView({ startDate, viewMode, endDate, plan, onClearSlot, onOpenS
 
                     return (
                         <div key={date} className={`calendar-day day-${dayOfWeek}`}>
-                            <div className="day-header" style={{ textAlign: 'center', justifyContent: 'center' }}>
+                            <div className="day-header">
                                 <span className="date-num">{d.getDate()}일</span>
                                 <span className="day-text">({['일', '월', '화', '수', '목', '금', '토'][dayOfWeek]})</span>
                             </div>

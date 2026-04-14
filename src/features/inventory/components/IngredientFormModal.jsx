@@ -88,8 +88,8 @@ function IngredientFormModal({ ingredient, onSave, onClose }) {
                     </div>
 
                     <div className="modal-actions">
-                        <button type="button" className="secondary-btn" onClick={onClose}>닫기</button>
-                        <button type="submit" className="primary-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button type="button" className="secondary-btn" onClick={onClose}>취소</button>
+                        <button type="submit" className="primary-btn">
                             <Save size={16} /> 저장
                         </button>
                     </div>

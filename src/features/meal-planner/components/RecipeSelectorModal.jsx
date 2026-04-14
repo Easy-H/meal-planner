@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ChefHat, Check, Plus } from 'lucide-react';
 
 import { useRecipeSearch } from '../../recipes/hooks/useRecipeSearch';
 
@@ -9,13 +10,17 @@ function RecipeSelectorModal({ foods, currentMeal, onSave, onClose, onAutoGenera
 
     const { searchResult } = useRecipeSearch(foods, searchTerm);
     // 2. 검색어에 따른 필터링 로직
-    // 이름, 카테고리, 혹은 포함된 재료 명칭으로 검색 가능
-    const filtered = searchResult
+    const filtered = searchResult || [];
 
     const toggleItem = (food) => {
-        const exists = selectedItems.find(it => it.id === food.id);
+        // ID가 없을 경우(자동 생성된 임시 항목 등) 이름을 기준으로 식별
+        const exists = selectedItems.find(it => 
+            (food.id && it.id === food.id) || (it.name === food.name && it.category === food.category)
+        );
         if (exists) {
-            setSelectedItems(selectedItems.filter(it => it.id !== food.id));
+            setSelectedItems(selectedItems.filter(it => 
+                (food.id ? it.id !== food.id : it.name !== food.name)
+            ));
         } else {
             setSelectedItems([...selectedItems, food]);
         }
@@ -36,7 +41,10 @@ function RecipeSelectorModal({ foods, currentMeal, onSave, onClose, onAutoGenera
     return (
         <div className="modal-overlay">
             <div className="modal-content recipe-selector card">
-                <h2>{currentMeal ? '식단 수정하기' : '새로운 식단 구성'}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
+                    <ChefHat size={24} color="var(--primary-color)" />
+                    <h2 style={{ margin: 0 }}>{currentMeal ? '식단 수정하기' : '새로운 식단 구성'}</h2>
+                </div>
 
                 {/* 현재 선택된 조합 (바구니 역할) */}
                 <div className="selected-basket">
@@ -45,15 +53,15 @@ function RecipeSelectorModal({ foods, currentMeal, onSave, onClose, onAutoGenera
                     </div>
                     <div className="basket-content" 
                         style={{ 
-                            display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '15px', 
+                            display: 'flex', flexWrap: 'wrap', gap: '8px',
                             background: 'var(--bg-app)', borderRadius: 'var(--radius-md)', 
-                            border: '1px solid var(--border-light)', minHeight: '80px', marginBottom: '10px' 
+                            minHeight: '80px', marginBottom: '10px' 
                         }}>
                         {selectedItems.length === 0 ? (
                             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 'auto' }}>식단에 담을 메뉴를 아래에서 선택하세요.</p>
                         ) : (
-                            selectedItems.map((it, idx) => (
-                                <div key={it.id || idx} className="basket-tag"
+                            selectedItems.map((it) => (
+                                <div key={it.id || it.name} className="basket-tag"
                                     style={{
                                         display: 'flex', alignItems: 'center', gap: '5px',
                                         background: 'white', padding: '8px 14px', borderRadius: '24px',
@@ -81,17 +89,21 @@ function RecipeSelectorModal({ foods, currentMeal, onSave, onClose, onAutoGenera
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <div className="selector-list" style={{ padding: '4px', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', background: '#f8fafc' }}>
-                        {filtered.map((food, idx) => (
+                    <div className="selector-list" style={{ maxHeight: '150px' }}>
+                        {filtered.map((food) => {
+                            const isSelected = selectedItems.some(it => 
+                                (food.id && it.id === food.id) || (it.name === food.name && it.category === food.category)
+                            );
+                            return (
                             <div
-                                key={idx}
-                                className={`selector-item ${selectedItems.find(it => it.id === food.id) ? 'active' : ''}`}
+                                key={food.id || food.name}
+                                className={`selector-item ${isSelected ? 'active' : ''}`}
                                 onClick={() => toggleItem(food)}
                                 style={{
                                     padding: '14px 18px',
                                     borderRadius: 'var(--radius-md)', marginBottom: '10px',
-                                    background: selectedItems.find(it => it.id === food.id) ? '#f0fdf4' : 'white',
-                                    border: selectedItems.find(it => it.id === food.id) ? '2px solid var(--primary-color)' : '1px solid var(--border-light)',
+                                    background: isSelected ? '#f0fdf4' : 'white',
+                                    border: isSelected ? '2px solid var(--primary-color)' : '1px solid var(--border-light)',
                                     transition: 'all 0.2s'
                                 }}
                             >
@@ -99,17 +111,18 @@ function RecipeSelectorModal({ foods, currentMeal, onSave, onClose, onAutoGenera
                                     <strong style={{ color: 'var(--text-main)', fontSize: '1rem' }}>{food.name}</strong>
                                     <span className="cat" style={{ marginLeft: '10px', fontSize: '0.8rem', color: 'var(--text-muted)', background: '#f1f5f9', padding: '4px 8px', borderRadius: '6px' }}>{food.category}</span>
                                 </div>
-                                <div className="item-plus" style={{ color: selectedItems.find(it => it.id === food.id) ? 'var(--primary-color)' : '#cbd5e1', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                                    {selectedItems.find(it => it.id === food.id) ? '✓ 완료' : '＋ 담기'}
+                                <div className="item-plus" style={{ color: isSelected ? 'var(--primary-color)' : '#cbd5e1', fontWeight: 'bold', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    {isSelected ? <><Check size={16}/> 완료</> : <><Plus size={16}/> 담기</>}
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
                 <div className="modal-actions">
-                    <button className="secondary-btn" onClick={onClose} style={{ flex: 1 }}>취소</button>
-                    <button className="primary-btn" onClick={handleConfirm} style={{ flex: 1 }}>식단 적용하기</button>
+                    <button className="secondary-btn" onClick={onClose}>취소</button>
+                    <button className="primary-btn" onClick={handleConfirm}>식단 적용하기</button>
                 </div>
             </div>
         </div>

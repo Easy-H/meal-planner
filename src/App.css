@@ -389,9 +389,18 @@
 .modal-actions {
 	display: flex;
 	flex-direction: row;
-	align-items: stretch;
+	gap: 12px;
+	margin-top: 10px;
+}
+
+.modal-actions button {
+	flex: 1;
+	padding: 12px;
+	font-size: 0.9rem;
+	display: flex;
+	align-items: center;
 	justify-content: center;
-	gap: 20px;
+	gap: 8px;
 }
 
 .modal-content {
@@ -406,6 +415,19 @@
 	gap: 20px;
 	flex-direction: column;
 	box-shadow: var(--shadow-md);
+}
+
+/* 식단 선택 모달 전용 레이아웃: 전체 스크롤 방지 */
+.modal-content.recipe-selector {
+	max-height: 90vh;
+	overflow: hidden; /* 모달 자체 스크롤 방지 */
+	display: flex;
+	flex-direction: column;
+}
+
+.recipe-selector .selector-list {
+	flex: 1; /* 가용 공간 모두 차지 */
+	overflow-y: auto; /* 리스트 부분만 스크롤 */
 }
 
 button {
@@ -426,6 +448,11 @@ button {
 .primary-btn:hover, .secondary-btn:hover {
 	filter: brightness(0.95);
 	transform: translateY(-2px);
+}
+
+.primary-btn:active, .secondary-btn:active {
+	transform: translateY(0);
+	filter: brightness(0.9);
 }
 
 input {
@@ -657,19 +684,29 @@ select {
 /* 1. 리스트형 (한 줄에 하나씩 길게) */
 .list-view {
 	grid-template-columns: 1fr;
+	overflow-x: auto; /* 가로 스크롤 허용 */
+	background: white;
 }
 
 .list-view .calendar-day {
 	flex-direction: row;
 	align-items: stretch;
 	min-height: auto;
+	min-width: 1000px; /* 가로 스크롤을 유도하기 위한 최소 너비 */
+	border-bottom: 1px solid var(--border-light);
 }
 
 .list-view .day-header {
-	width: 80px;
+	width: 100px;
+	min-width: 100px;
+	position: sticky;
+	left: 0;
+	z-index: 5;
+	background: #f8f9fa;
 	border-bottom: none;
 	align-content: center;
 	border-right: 1px solid #eee;
+	box-shadow: 2px 0 5px rgba(0,0,0,0.05);
 }
 
 .list-view .meal-slots {
@@ -685,16 +722,20 @@ select {
 /* 3. 달력형 (실제 달력처럼 7열 고정) */
 .calendar-view {
 	grid-template-columns: repeat(7, 1fr);
-	gap: 5px;
+	gap: 0; /* 테두리 정렬을 위해 0으로 조정 */
+	border: 1px solid var(--border-light);
 }
 
 .calendar-weekday-header {
+	position: sticky;
+	top: 0;
+	z-index: 10;
 	text-align: center;
 	font-weight: bold;
 	padding: 10px;
-	background: #eee;
+	background: #f8f9fa;
 	color: black;
-	border-radius: 4px;
+	border-bottom: 1px solid var(--border-light);
 }
 
 .calendar-day.padding {
@@ -776,10 +817,12 @@ select {
 .cost-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
 }
 
 .cost-table th {
+    position: sticky;
+    top: 0;
+    z-index: 20; /* 일반 바디 셀보다 위에 표시 */
     text-align: center;
     padding: 12px;
     background: #f8fafc;
@@ -967,8 +1010,16 @@ select {
 
 th.sticky-col,
 th.sticky-col-right {
-	z-index: 11;
+	z-index: 30; /* 헤더와 고정 열이 만나는 지점은 가장 높은 우선순위 부여 */
 	background-color: #f8fafc !important;
+}
+
+.planner-content-area {
+	max-height: calc(100vh - 280px); /* 툴바와 탭바를 제외한 영역 */
+	overflow: auto;
+	border-radius: var(--radius-md);
+	border: 1px solid var(--border-light);
+	background: white;
 }
 
 .price-input-small input {

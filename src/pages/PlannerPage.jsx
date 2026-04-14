@@ -57,7 +57,14 @@ function PlannerPage() {
 
         const totalCost = selectedItems.reduce((sum, item) => {
             return sum + Object.entries(item.ingredients || {}).reduce((s, [n, w]) => {
-                return s + ((prices[n] || 0) * w / 100);
+                const priceData = prices[n];
+                if (priceData && typeof priceData === 'object') {
+                    // 새로운 객체 구조 기반 계산: (사용량 / 구매중량) * 구매가격
+                    return s + (w / (priceData.purchaseWeight || 100)) * (priceData.purchasePrice || 0);
+                }
+                // 하위 호환성 (숫자인 경우)
+                const price = typeof priceData === 'number' ? priceData : 0;
+                return s + (price * w / 100);
             }, 0);
         }, 0);
 
@@ -213,64 +220,68 @@ function PlannerPage() {
     return (
         <>
             <div className="card cost-card" style={{ 
-                position: 'sticky', top: '15px', zIndex: 1000, 
-                padding: '15px 20px', marginBottom: '20px' 
+                position: 'sticky', top: '10px', zIndex: 1000, 
+                padding: '20px', marginBottom: '20px' 
             }}>
-                <div className="toolbar" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '10px' }}>
-                        <CalendarDays size={20} color="var(--primary-color)" />
-                        <h3 style={{ whiteSpace: 'nowrap' }}>식단 플래너</h3>
+                <div className="planner-header-container" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    {/* Row 1: 타이틀 및 날짜 */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <CalendarDays size={22} color="var(--primary-color)" />
+                            <h2 style={{ fontSize: '1.3rem', margin: 0 }}>식단 플래너</h2>
+                        </div>
+                        
+                        <div className="date-picker-group">
+                            <CalendarDays size={18} color="var(--primary-color)" />
+                            <DatePicker
+                                selectsRange={true}
+                                startDate={new Date(startDate + 'T00:00:00')}
+                                endDate={endDate ? new Date(endDate + 'T00:00:00') : null}
+                                onChange={(update) => {
+                                    const [start, end] = update;
+                                    const formatLocal = (date) => {
+                                        if (!date) return null;
+                                        const y = date.getFullYear();
+                                        const m = String(date.getMonth() + 1).padStart(2, '0');
+                                        const d = String(date.getDate()).padStart(2, '0');
+                                        return `${y}-${m}-${d}`;
+                                    };
+                                    if (start) setStartDate(formatLocal(start));
+                                    setEndDate(end ? formatLocal(end) : null);
+                                }}
+                                dateFormat="yyyy-MM-dd"
+                                className="modern-datepicker range-picker"
+                                placeholderText="날짜 범위를 선택하세요"
+                            />
+                        </div>
                     </div>
                     
-                    <div className="date-picker-group" style={{ flex: '1 1 220px' }}>
-                        <CalendarDays size={18} color="var(--primary-color)" />
-                        <DatePicker
-                            selectsRange={true}
-                            startDate={new Date(startDate + 'T00:00:00')}
-                            endDate={endDate ? new Date(endDate + 'T00:00:00') : null}
-                            onChange={(update) => {
-                                const [start, end] = update;
-                                const formatLocal = (date) => {
-                                    if (!date) return null;
-                                    const y = date.getFullYear();
-                                    const m = String(date.getMonth() + 1).padStart(2, '0');
-                                    const d = String(date.getDate()).padStart(2, '0');
-                                    return `${y}-${m}-${d}`;
-                                };
-                                if (start) setStartDate(formatLocal(start));
-                                setEndDate(end ? formatLocal(end) : null);
-                            }}
-                            dateFormat="yyyy-MM-dd"
-                            className="modern-datepicker range-picker"
-                            placeholderText="날짜 범위 선택"
-                        />
-                    </div>
+                    {/* Row 2: 보기 설정 및 버튼들 */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', }}>
+                        <select
+                            className="view-dropdown"
+                            value={viewMode}
+                            onChange={(e) => setViewMode(e.target.value)}
+                            style={{ minWidth: '140px' }}
+                        >
+                            <option value="list">📝 리스트형</option>
+                            <option value="grid">📱 그리드형</option>
+                            <option value="calendar">📅 달력형 (7일)</option>
+                        </select>
 
-                    <select
-                        id="view-mode-select"
-                        className="view-dropdown"
-                        value={viewMode}
-                        onChange={(e) => setViewMode(e.target.value)}
-                        style={{ minWidth: '130px' }}
-                    >
-                        <option value="list">📝 리스트형</option>
-                        <option value="grid">📱 그리드형</option>
-                        <option value="calendar">📅 달력형 (7일)</option>
-                    </select>
-
-                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                        <button className="secondary-btn" onClick={() => { if (confirm("초기화하시겠습니까?")) setPlan({}); }}>초기화</button>
-                        <button className="primary-btn pulse" onClick={handleAutoFill}>자동 채우기</button>
-                        <button className="secondary-btn" onClick={handleExportExcel}
-                            style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: '#2d6a4f', color: 'white' }}>
-                            <Download size={16} /> 엑셀
-                        </button>
-                        <button className="secondary-btn" onClick={() => setIsConfigOpen(true)}>⚙️</button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button className="secondary-btn" onClick={() => { if (confirm("초기화하시겠습니까?")) setPlan({}); }}>초기화</button>
+                            <button className="primary-btn pulse" onClick={handleAutoFill}>자동 채우기</button>
+                            <button className="secondary-btn" onClick={handleExportExcel} style={{ backgroundColor: '#2d6a4f', color: 'white' }}>
+                                <Download size={16} /> 엑셀
+                            </button>
+                            <button className="secondary-btn" onClick={() => setIsConfigOpen(true)}>⚙️ 설정</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+            <div className="card">
                 <CalendarView
                     startDate={startDate}
                     endDate={endDate}
