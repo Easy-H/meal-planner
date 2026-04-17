@@ -212,7 +212,8 @@
 }
 
 .day-inputs input {
-	width: 15px;
+	width: 30px;
+	padding: 5px;
 	text-align: center;
 }
 
@@ -563,27 +564,42 @@ select {
 }
 
 .meal-slot {
-	border: 2px dashed #ddd;
-	border-radius: 6px;
-	padding: 10px;
+	border: 1.5px dashed #e2e8f0;
+	border-radius: var(--radius-sm);
+	padding: 12px;
 	cursor: pointer;
 	font-size: 0.9rem;
 	position: relative;
 	transition: all 0.2s;
+	min-height: 80px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.meal-slot.empty {
+	color: var(--text-muted);
+	display: flex;
+	flex-direction: row;
 	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	background: #f8fafc;
 }
 
 .meal-slot.empty:hover {
-	border-color: #4caf50;
-	background: #f1f8e9;
-	color: #4caf50;
+	border-color: var(--primary-color);
+	background: #f0fdf4;
+	color: var(--primary-color);
 }
 
 .meal-slot.filled {
 	border-style: solid;
-	border-color: #e0e0e0;
+	border-color: var(--border-light);
 	background: white;
-	box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.05);
+	box-shadow: var(--shadow-sm);
+	justify-content: space-between;
+	align-items: stretch;
 }
 
 .remove-btn,
@@ -595,8 +611,9 @@ select {
 	height: 20px;
 	font-size: 10px;
 	padding: 0;
+	display: flex;
+	align-items: center;
 	justify-content: center;
-	align-content: center;
 	cursor: pointer;
 	opacity: 0;
 	z-index: 100;
@@ -612,13 +629,45 @@ select {
 .remove-btn {
 	top: 5px;
 	right: 5px;
-	background: #ff5252;
+	background: #fee2e2;
+	color: #ef4444;
+}
+
+.remove-btn:hover {
+	background: #ef4444;
 	color: white;
 }
 
 .meal-slot.filled:hover .remove-btn,
 .meal-slot.filled:hover .edit-btn {
 	opacity: 1;
+}
+
+.meal-item-list {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-bottom: 8px;
+}
+
+.meal-item-name {
+	font-weight: 600;
+	color: var(--text-main);
+	font-size: 0.85rem;
+	line-height: 1.4;
+}
+
+.meal-footer {
+	border-top: 1px solid var(--border-light);
+	padding-top: 6px;
+	display: flex;
+	justify-content: flex-end;
+}
+
+.meal-price {
+	font-size: 0.75rem;
+	color: var(--primary-color);
+	font-weight: 700;
 }
 
 .recipe-selector {

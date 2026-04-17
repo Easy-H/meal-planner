@@ -18,12 +18,16 @@ function PlannerPage() {
     const [prices, setPrices] = useState({});
 
     // 요일별 식단 수 설정을 포함한 통합 설정
-    const [autoConfigs, setAutoConfigs] = useState({
-        budget: 100000,
-        avoidRepetition: true,
-        minIngredientInterval: 3,
-        schedule: { 1: 3, 2: 3, 3: 3, 4: 3, 5: 3, 6: 2, 0: 2 }, // 여기서 관리
-        categories: ["주식", "국", "메인반찬", "밑반찬"]
+    const [autoConfigs, setAutoConfigs] = useState(() => {
+        const saved = localStorage.getItem('mp_auto_configs');
+        if (saved) return JSON.parse(saved);
+        return {
+            budget: 100000,
+            avoidRepetition: true,
+            minIngredientInterval: 3,
+            schedule: { 0: 0, 1: 3, 2: 3, 3: 3, 4: 3, 5: 3, 6: 2},
+            categories: ["주식", "국", "메인반찬", "밑반찬"]
+        };
     });
 
     const [plan, setPlan] = useState(() => {
@@ -41,15 +45,15 @@ function PlannerPage() {
     useEffect(() => {
         setFoods(recipeService.getRecipes());
         setPrices(priceService.getPrices());
-        const savedSettings = settingService.getSettings();
-        if (savedSettings) {
-            setAutoConfigs(prev => ({ ...prev, schedule: savedSettings.schedule }));
-        }
     }, []);
 
     useEffect(() => {
         localStorage.setItem('mp_current_plan', JSON.stringify(plan));
     }, [plan]);
+
+    useEffect(() => {
+        localStorage.setItem('mp_auto_configs', JSON.stringify(autoConfigs));
+    }, [autoConfigs]);
 
     const handleSaveManualMeal = (selectedItems) => {
         if (!selectorConfig) return;
